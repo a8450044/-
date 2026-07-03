@@ -6,80 +6,113 @@
   <title>學測英文作文 AI 評審台</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap');
+    body { font-family: 'Noto Sans TC', sans-serif; }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #F1F5F9; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 3px; }
+  </style>
 </head>
-<body class="bg-slate-50 min-h-screen">
-  <header class="bg-white border-b border-slate-200 sticky top-0 z-40 p-4">
-    <div class="max-w-7xl mx-auto flex items-center justify-between">
-      <h1 class="text-lg font-bold">學測英文作文 AI 評審台</h1>
-      <button onclick="document.getElementById('settings-modal').classList.remove('hidden')" class="p-2 bg-indigo-600 text-white rounded-xl">⚙️ 設定</button>
+<body class="bg-slate-50 min-h-screen flex flex-col custom-scrollbar text-slate-800">
+
+  <!-- 頂部導覽列 -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="bg-indigo-600 text-white p-2 rounded-xl shadow-md">
+          <i data-lucide="graduation-cap" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold text-slate-900 tracking-tight">學測英文作文 AI 評審台</h1>
+          <p class="text-xs text-indigo-600 font-medium">大考閱卷標準 • 完整教學版</p>
+        </div>
+      </div>
+      <button onclick="openModal('settings-modal')" class="p-2 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition">
+        <i data-lucide="settings" class="w-5 h-5"></i>
+      </button>
     </div>
   </header>
 
-  <main class="max-w-7xl mx-auto p-4 py-8">
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-      <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-        <input type="text" id="student-name" placeholder="學生姓名" class="w-full p-3 border rounded-xl">
-        <input type="text" id="writing-topic" placeholder="作文題目" class="w-full p-3 border rounded-xl">
-        <textarea id="essay-content" placeholder="請輸入英文作文..." class="w-full h-64 p-3 border rounded-xl"></textarea>
-        <button onclick="startAIEvaluation()" class="w-full py-4 bg-indigo-600 text-white font-bold rounded-xl">開始 AI 專業評分</button>
+  <!-- 主內容區 -->
+  <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      
+      <!-- 左側：輸入編輯器 -->
+      <div class="lg:col-span-5 flex flex-col space-y-6">
+        <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col space-y-5">
+          <h2 class="text-md font-bold text-slate-900 border-b border-slate-100 pb-3">新文章寫作上傳</h2>
+          <input type="text" id="student-name" placeholder="學生姓名" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+          <input type="text" id="writing-topic" placeholder="寫作題目" class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+          <textarea id="essay-content" placeholder="請在此輸入英文作文..." class="w-full h-64 px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-sm resize-none"></textarea>
+          <button onclick="startAIEvaluation()" class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-2xl transition">開始 AI 專業評分</button>
+        </div>
       </div>
-      <div id="eval-result" class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-        <h2 id="eval-title" class="text-lg font-bold mb-4">評分結果</h2>
-        <div id="eval-content" class="text-slate-700 leading-relaxed">請先輸入作文並點擊評分。</div>
+
+      <!-- 右側：報告產出 -->
+      <div class="lg:col-span-7 flex flex-col">
+        <div id="eval-placeholder" class="bg-white rounded-2xl border border-slate-200 p-12 text-center shadow-sm flex flex-col items-center justify-center flex-grow">
+          <h3 class="text-lg font-bold text-slate-900">AI 教師待命中</h3>
+        </div>
+        <div id="eval-result" class="hidden bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-4">
+          <h3 class="text-lg font-bold text-slate-900">評分結果</h3>
+          <p id="score-total" class="text-2xl text-indigo-600 font-bold"></p>
+          <p id="teacher-overall-comment" class="text-sm text-slate-700 leading-relaxed"></p>
+        </div>
       </div>
     </div>
   </main>
 
-  <div id="settings-modal" class="fixed inset-0 z-50 flex items-center justify-center hidden bg-slate-900/50">
-    <div class="bg-white p-8 rounded-2xl max-w-md w-full mx-4 shadow-xl">
-      <h2 class="text-xl font-bold mb-6">連線設定</h2>
+  <!-- Modal：設定視窗 -->
+  <div id="settings-modal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+    <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm" onclick="closeModal('settings-modal')"></div>
+    <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full mx-4 p-6 relative z-10">
+      <h3 class="text-md font-bold text-slate-900 mb-4">設定視窗</h3>
       <div class="space-y-4">
         <div>
-          <label class="block text-sm font-bold mb-2">1. GAS API 部署網址</label>
-          <input type="password" id="cfg-gas-url" class="w-full p-3 border rounded-xl" placeholder="https://script.google.com/...">
+          <label class="block text-xs font-bold text-slate-500 mb-1">1. GAS API 部署網址</label>
+          <input type="password" id="cfg-gas-url" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs">
         </div>
         <div>
-          <label class="block text-sm font-bold mb-2">2. Gemini API 金鑰 (API Key)</label>
-          <input type="password" id="cfg-api-key" class="w-full p-3 border rounded-xl" placeholder="AIzaSy...">
+          <label class="block text-xs font-bold text-slate-500 mb-1">2. Gemini API 金鑰 (API Key)</label>
+          <input type="password" id="cfg-api-key" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs">
         </div>
       </div>
-      <div class="mt-8 flex justify-end space-x-3">
-        <button onclick="document.getElementById('settings-modal').classList.add('hidden')" class="px-4 py-2 bg-slate-200 rounded-xl">取消</button>
-        <button onclick="saveSettings()" class="px-6 py-2 bg-indigo-600 text-white rounded-xl">儲存設定</button>
-      </div>
+      <button onclick="saveSettings()" class="mt-6 w-full py-2 bg-indigo-600 text-white font-bold rounded-xl text-xs">儲存設定</button>
     </div>
   </div>
 
   <script>
+    function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+    
     function saveSettings() {
       localStorage.setItem('gas_url', document.getElementById('cfg-gas-url').value);
       localStorage.setItem('gemini_api_key', document.getElementById('cfg-api-key').value);
       alert("設定已儲存！");
-      document.getElementById('settings-modal').classList.add('hidden');
+      closeModal('settings-modal');
     }
 
     async function startAIEvaluation() {
       const apiKey = localStorage.getItem('gemini_api_key');
       const topic = document.getElementById('writing-topic').value;
       const essay = document.getElementById('essay-content').value;
-
-      if (!apiKey) return alert("請先點擊右上角「設定」填寫 Gemini API Key！");
+      if (!apiKey) return alert("請至設定填寫 Gemini API Key！");
       
-      document.getElementById('eval-content').innerText = "AI 老師閱卷中...";
+      document.getElementById('eval-placeholder').classList.add('hidden');
+      document.getElementById('eval-result').classList.remove('hidden');
+      document.getElementById('teacher-overall-comment').innerText = "AI 教師分析中...";
       
       const apiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+      const payload = { contents: [{ parts: [{ text: `請以學測標準批改，返回 JSON 格式：{"scores":{"total":15},"overall_teacher_comment":"..."}。題目:${topic}\n內容:${essay}` }] }], generationConfig: { responseMimeType: "application/json" } };
+      
       try {
-        const response = await fetch(apiEndpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents: [{ parts: [{ text: `題目:${topic}\n作文:${essay}\n請給分並評析` }] }] })
-        });
+        const response = await fetch(apiEndpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         const data = await response.json();
-        if (data.error) throw new Error(data.error.message);
-        document.getElementById('eval-content').innerText = data.candidates[0].content.parts[0].text;
-      } catch (err) {
-        alert("評分異常：" + err.message);
-      }
+        const result = JSON.parse(data.candidates[0].content.parts[0].text);
+        document.getElementById('score-total').innerText = "總分：" + result.scores.total + " / 20";
+        document.getElementById('teacher-overall-comment').innerText = result.overall_teacher_comment;
+      } catch (e) { alert("評分異常：" + e.message); }
     }
 
     window.onload = () => {
