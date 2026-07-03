@@ -9,7 +9,7 @@
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght=300;400;500;700;900&display=swap');
     body {
       font-family: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     }
@@ -828,10 +828,43 @@ function saveModelEssayToSheet(data) {
 }
 `;
 
+    // 同步處理 URL 參數以防 race condition 衝突
+    function checkUrlParamsSync() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const configParam = urlParams.get('config');
+
+      if (configParam) {
+        try {
+          const decoded = decodeURIComponent(atob(configParam.trim()));
+          const parts = decoded.split('||');
+          if (parts[0]) {
+            localStorage.setItem('gas_url', parts[0].trim());
+            if (parts[1] !== undefined && parts[1] !== "") {
+              localStorage.setItem('gemini_api_key', parts[1].trim());
+            }
+            
+            // 立即重置網域 URL 參數
+            const cleanUrl = window.location.origin + window.location.pathname;
+            window.history.replaceState({}, document.title, cleanUrl);
+            
+            // 系統初始化彈出 Modal 通知
+            setTimeout(() => {
+              showModal('一鍵設定完成 🎉', '系統已自動解密讀取配置！目前「雲端資料庫網址」與「AI 批改金鑰」已成功寫入此載具，您可以立刻開始評分！', 'success');
+            }, 600);
+          }
+        } catch (error) {
+          console.error("解密共享設定參數失敗", error);
+        }
+      }
+    }
+
     // 初始化與 DOM 讀取載入
     window.addEventListener('DOMContentLoaded', () => {
       lucide.createIcons();
       document.getElementById('gas-code-preview').textContent = gasCodeString;
+
+      // 優先運行同步阻塞解析，解決 403 爭用問題
+      checkUrlParamsSync();
 
       // 載入設定配置
       loadConfiguration();
@@ -844,9 +877,6 @@ function saveModelEssayToSheet(data) {
       essayTextarea.addEventListener('input', () => {
         updateWordCount(essayTextarea.value);
       });
-
-      // 檢查是否從外部導入 GAS 與 API 設定
-      checkUrlParams();
     });
 
     // ==========================================
@@ -1018,34 +1048,6 @@ function saveModelEssayToSheet(data) {
       }
     }
 
-    function checkUrlParams() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const configParam = urlParams.get('config');
-
-      if (configParam) {
-        try {
-          const decoded = decodeURIComponent(atob(configParam));
-          const parts = decoded.split('||');
-          if (parts[0]) {
-            localStorage.setItem('gas_url', parts[0]);
-            if (parts[1] !== undefined) {
-              localStorage.setItem('gemini_api_key', parts[1]);
-            }
-            
-            // 重新刷新網頁以清除 URL 參數污染，並載入配置
-            const cleanUrl = window.location.origin + window.location.pathname;
-            window.history.replaceState({}, document.title, cleanUrl);
-            
-            showModal('導入成功', '已偵測到一鍵設定分享參數，系統已自動導入連線設置！', 'success');
-            loadConfiguration();
-          }
-        } catch (error) {
-          console.error("解析 config 參數失敗", error);
-          showToast('設定失敗', '解析分享連結中的設定參數時發生錯誤。', 'error');
-        }
-      }
-    }
-
     function updateStatusBadges() {
       const gasBadge = document.getElementById('gas-status-badge');
       const gasText = document.getElementById('gas-status-text');
@@ -1185,7 +1187,8 @@ function saveModelEssayToSheet(data) {
 
     function copyTextToClipboard(text) {
       const textArea = document.createElement("textarea");
-      textArea.value = text;
+      text_to_use = text;
+      textArea.value = text_to_use;
       textArea.style.position = "fixed"; 
       document.body.appendChild(textArea);
       textArea.focus();
