@@ -80,7 +80,7 @@
         const result = JSON.parse(data.candidates[0].content.parts[0].text);
         document.getElementById('score-display').innerText = "分數：" + result.score;
         document.getElementById('eval-content').innerText = result.comment;
-      } catch (err) { alert("評分異常，請確認金鑰是否有效或次數已達上限。"); }
+      } catch (err) { alert("詳細錯誤原因：" + err.message); console.error(err); }
     }
   </script>
 </body>
